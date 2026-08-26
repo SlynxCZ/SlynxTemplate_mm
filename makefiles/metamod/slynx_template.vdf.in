@@ -1,0 +1,5 @@
+"Metamod Plugin"
+{
+	"alias"	"slynx_template"
+	"file"	"addons/slynx_template/bin/${PROJECT_VDF_PLATFORM}/slynx_template"
+}
