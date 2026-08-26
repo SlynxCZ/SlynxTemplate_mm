@@ -2,9 +2,9 @@
 
 **Starting point for a CS2 Metamod:Source plugin.**
 
-Builds as-is with CMake and AMBuild, ships a working CI that releases Linux and
-Windows binaries on a tag, and carries a private SourceHook so the plugin's hooks
-don't share metamod's engine.
+Builds as-is with CMake and AMBuild, ships CI that releases Linux and Windows
+binaries on a tag, carries a private SourceHook so the plugin's hooks don't share
+metamod's engine, and comes with schema field access already working.
 
 ## Names
 
@@ -25,21 +25,70 @@ they need nothing.
 Then `src/plugin.cpp`'s `GetName()` / `GetLogTag()` / `GetDescription()`, and the
 include guard in `src/plugin.h`.
 
-## What's already wired up
+## What's in the box
 
-`Load()` grabs the usual engine interfaces and installs one hook on
-`INetworkServerService::StartupServer`, which fires on every map change and is
-the natural place to reset per-map state. `Unload()` removes it. That is the
-whole plugin -- it is there as a shape to copy, not because it does anything.
+`Load()` fetches the interfaces a plugin usually ends up wanting -- server,
+engine, cvar, schema system, game resource service, network server service,
+network system, filesystem -- and opens `CModule` handles on `server` and
+`engine`. `Unload()` is empty. There are no hooks; `plugin.h` has an empty
+`private: // Hooks` section waiting for them.
 
-`src/sdk/CServerSideClient.h` is a hand-reconstructed layout of the engine-side
-client. Nothing includes it by default. It is here because it is the piece that
-costs the most to rebuild from scratch and the one most plugins end up needing;
-delete it if yours doesn't. It is version-dependent and does not fail loudly --
-on the current build `m_nSignonState` sits at offset 100 on Linux, 92 on Windows.
-Worth re-checking against CS2Fixes after a major game update.
+### GameEntitySystem()
 
-## Hooking recipes
+The SDK declares `extern CGameEntitySystem *GameEntitySystem();` in
+`entity2/entitysystem.h` but never defines it -- that is the plugin's job.
+`src/plugin.cpp` does it by reaching into the game resource service:
+
+```cpp
+CGameEntitySystem *GameEntitySystem()
+{
+    // CGameResourceService::SetEntityResourceManifest
+    // str server_entities
+    return *CMemory(g_pGameResourceServiceServer).Offset(WIN_LINUX(0x58, 0x50)).RCast<CGameEntitySystem **>();
+}
+```
+
+That offset is version-dependent and fails silently if the game moves it. The
+comment above it is the recipe for finding it again.
+
+### Schema fields
+
+`src/sdk/schemasystem_helper.h` gives you `SCHEMA_FIELD` and
+`SCHEMA_FIELD_POINTER`. Declare a field on a class and you get an accessor plus
+netvar replication:
+
+```cpp
+class CCSPlayerController
+{
+public:
+    SCHEMA_FIELD(int32_t, CCSPlayerController, m_iPawnArmor)
+};
+
+pController->m_iPawnArmor() = 50;
+pController->m_iPawnArmor.NetworkStateChanged();
+```
+
+`GetServerPropInfo()` looks the offset up through the schema system's
+`libserver.so` / `server.dll` type scope, and separately asks the network
+serializer database whether the field is replicated at all. Plenty of schema
+fields never leave the server, and `NetworkStateChanged()` is a no-op for those
+rather than wasted work.
+
+Fields on chained classes (`CCSGameRules` and friends) route the notification
+through the class' `CNetworkVarChainer` so the change gets attributed to the
+owning entity; `GetServerChainOffset()` walks up base classes to find it. Fields
+straight on a `CEntityInstance` notify the entity directly. The macro picks
+whichever applies, so calling code doesn't have to care.
+
+A missing class or field is an `Error()` at first use, not a silent zero offset.
+
+### utils.hpp
+
+`WIN_LINUX(win, linux)` for platform-split constants, `CallVFunc<T, index>()` for
+calling a vtable slot you don't have a header for, and a compile-time djb2a
+`"..."_sh` literal for switching on strings.
+
+## Adding a hook
 
 **An interface you can fetch.** Fetch it, then `SH_ADD_HOOK` on the pointer:
 
@@ -52,10 +101,10 @@ m_iHookID = SH_ADD_HOOK(ICvar, DispatchConCommand, g_pCVar,
 
 **An engine class with no interface and no instance at load time**
 (`CServerSideClient` and friends). Resolve the vtable out of the module by name
-and hook it directly -- this is what `vendor/dynlibutils` is for:
+and hook it directly -- this is what the `CModule` handles in `Load()` and
+`vendor/dynlibutils` are for:
 
 ```cpp
-CModule libengine(g_pEngineServer);
 CMemory pVTable = libengine.GetVirtualTableByName("CServerSideClient");
 if (!pVTable.IsValid())
 {
@@ -72,16 +121,35 @@ m_iHookID = SH_ADD_DVPHOOK(CServerSideClient, SendNetMessage,
 as an object and leaves the hook's interface pointer null, so one install covers
 every instance -- no waiting for the first client, no per-object bookkeeping.
 `META_IFACEPTR(CServerSideClient)` inside the handler still gives you the real
-`this`, which is how you tell instances apart.
+`this`, which is how you tell instances apart. This needs a header for the class
+you're hooking, since SourceHook derives the vtable index from the declared
+virtual order.
 
-Check the hook ID either way. A zero means the hook never went in, and a plugin
-that silently does nothing is worse than one that refuses to load.
+Check the hook ID either way, and store it so `Unload()` can
+`SH_REMOVE_HOOK_ID()` it. A zero means the hook never went in, and a plugin that
+silently does nothing is worse than one that refuses to load.
+
+Some hook prototypes need a type the SDK only forward-declares --
+`GameSessionConfiguration_t` is the usual one. Defining an empty class of that
+name in your `.cpp` is enough to complete it.
+
+## Source lists
+
+Two of them, and they have to agree:
+
+- `CMakeLists.txt` globs `src/` and appends the SDK's `memoverride.cpp`,
+  `bitbuf.cpp`, `convar.cpp`, `keyvalues3.cpp` and the three `entity2/` files.
+- `AMBuilder` lists `src/` files **explicitly** -- a new `.cpp` under `src/` gets
+  picked up by CMake automatically and ignored by AMBuild until you add it. The
+  SDK half lives in `AMBuildScript`'s `HL2Library()`.
+
+A file that builds locally and fails to link in CI is almost always this.
 
 ## Protobufs
 
 `makefiles/protobuf.cmake` and `AMBuilder` each carry a list of `.proto` files to
-generate. If you need a message that isn't compiling, it is almost always because
-its file is missing from **both** lists.
+generate. If a message won't compile, it is almost always because its file is
+missing from **both** lists.
 
 The CMake path regenerates when a `.proto` changes only because of the `DEPENDS`
 on the custom command -- without it you silently keep building against a stale
