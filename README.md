@@ -157,7 +157,7 @@ copy of the schema, which is a bad afternoon. AMBuild tracks this itself.
 
 ## Building
 
-Requires `HL2SDKCS2`, `MMSOURCE_DEV` and `CSGO_PROTO` in the environment, and the
+Requires `S2SDK` (or `HL2SDKCS2`), `MMSOURCE_DEV` and `CSGO_PROTO` in the environment, and the
 submodules checked out (`git submodule update --init --recursive`).
 
 CMake (local dev):

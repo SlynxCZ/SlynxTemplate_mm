@@ -3,10 +3,16 @@ project(slynx_template C CXX ASM)
 
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
-if(DEFINED ENV{HL2SDKCS2})
-    set(SOURCESDK_DIR $ENV{HL2SDKCS2})
-else()
-    message(FATAL_ERROR "Environment variable HL2SDKCS2 is not set!")
+# s2sdk (alliedmodders/s2sdk, formerly hl2sdk's cs2 branch): the first of
+# these variables that is set wins.
+foreach(var S2SDK_CS2 S2SDKCS2 S2SDK HL2SDK_CS2 HL2SDKCS2)
+    if(DEFINED ENV{${var}} AND NOT "$ENV{${var}}" STREQUAL "")
+        file(TO_CMAKE_PATH "$ENV{${var}}" SOURCESDK_DIR)
+        break()
+    endif()
+endforeach()
+if(NOT SOURCESDK_DIR)
+    message(FATAL_ERROR "s2sdk not found: set S2SDK (or HL2SDKCS2) to your checkout!")
 endif()
 
 if(DEFINED ENV{MMSOURCE_DEV})
