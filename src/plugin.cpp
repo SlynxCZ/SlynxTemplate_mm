@@ -1,14 +1,40 @@
-// Author: Michal Přikryl (Slynx) <github.com/SlynxCZ>
+/**
+ * vim: set ts=4 sw=4 tw=99 noet:
+ * =============================================================================
+ * SlynxTemplate_mm
+ * Copyright (C) 2026 Michal "Slynx (˙·٠● S l y n x ●٠·˙)" Přikryl.
+ * =============================================================================
+ *
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License, version 3.0, as published by the
+ * Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * Authors:
+ *   - Michal "Slynx (˙·٠● S l y n x ●٠·˙)" Přikryl
+ *
+ * Project: SlynxTemplate_mm
+ */
 
 #include "plugin.h"
 
 #include "utils.hpp"
 #include "module.hpp"
 
-#include "eiface.h"
-#include "entitysystem.h"
-#include "iserver.h"
-#include "playerslot.h"
+#include <engine2/inetworkserverservice.h>
+#include <engine2/isource2server.h>
+#include <engine2/ivengineserver2.h>
+#include <entitysystem.h>
+#include <filesystem/ifilesystem.h>
+#include <networksystem/inetworksystem.h>
+#include <playerslot.h>
 #include "interfaces/interfaces.h"
 
 #include <cstdio>
@@ -44,15 +70,6 @@ bool Plugin::Load(PluginId id, ISmmAPI* ismm, char* error, size_t maxlen, bool l
 bool Plugin::Unload(char* error, size_t maxlen)
 {
 	return true;
-}
-
-///////////////////////////////////////
-
-CGameEntitySystem* GameEntitySystem()
-{
-	// CGameResourceService::SetEntityResourceManifest
-	// str server_entities
-	return *CMemory(g_pGameResourceServiceServer).Offset(WIN_LINUX(0x58, 0x50)).RCast<CGameEntitySystem**>();
 }
 
 ///////////////////////////////////////
