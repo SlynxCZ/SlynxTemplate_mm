@@ -13,7 +13,6 @@ export GITHUB_SHA_SHORT="$(git rev-parse --short HEAD)"
 SDK_DIR="/tmp/sdk"
 S2SDK_DIR="$SDK_DIR/s2sdk"
 MMSOURCE_DIR="$SDK_DIR/metamod-source"
-CSGO_PROTO_DIR="$SDK_DIR/Protobufs"
 
 echo "=== Preparing temporary SDK directory ==="
 rm -rf "$SDK_DIR"
@@ -25,17 +24,12 @@ git clone --recursive --branch cs2 --single-branch https://github.com/alliedmodd
 echo "=== Downloading Metamod-Source ==="
 git clone --recursive --branch master --single-branch https://github.com/alliedmodders/metamod-source.git "$MMSOURCE_DIR"
 
-echo "=== Downloading Protobufs ==="
-git clone --recursive https://github.com/SteamTracking/Protobufs "$CSGO_PROTO_DIR"
-
 ### --- Export env vars for CMake ------------------------------------------
 export S2SDK="$S2SDK_DIR"
 export MMSOURCE_DEV="$MMSOURCE_DIR"
-export CSGO_PROTO="$CSGO_PROTO_DIR/csgo"
 
 echo "Using S2SDK=$S2SDK"
 echo "Using MMSOURCE_DEV=$MMSOURCE_DEV"
-echo "Using CSGO_PROTO=$CSGO_PROTO"
 
 ### --- Build ---------------------------------------------------------------
 echo "=== Starting build ==="

@@ -14,13 +14,33 @@ release artifacts.
 
 | Where | Change |
 | --- | --- |
-| `CMakeLists.txt` | `project()` and both `LIBRARY_OUTPUT_DIRECTORY` paths |
+| `CMakeLists.txt` | `project()` |
+| `makefiles/cmake/package.cmake` | the `addons/slynx_template` folder in `LIBRARY_OUTPUT_DIRECTORY` |
 | `AMBuildScript` | `plugin_name` and `plugin_alias` defaults |
-| `makefiles/metamod/` | rename `slynx_template.vdf.in`, fix the alias/file inside it and the two paths in `configure_metamod.cmake` |
+| `makefiles/metamod/` | rename `slynx_template.vdf.in` and fix the alias/file inside it; then the template name in `makefiles/cmake/metamod.cmake` (two paths) and `VDF_TEMPLATE` in `makefiles/ambuild/metamod.ambuild` |
 | `.github/workflows/main.yml` | artifact names and the release tarball names |
 
-`PackageScript` and `docker/` derive everything from `MMSPlugin.plugin_name`, so
-they need nothing.
+`makefiles/ambuild/package.ambuild` and `docker/` derive everything from
+`MMSPlugin.plugin_name`, so they need nothing.
+
+## Build files
+
+CMake and AMBuild are split the same way, file for file, under `makefiles/`:
+
+| CMake | AMBuild | What |
+| --- | --- | --- |
+| `CMakeLists.txt` | `AMBuildScript` | SDK / metamod lookup, vendor libraries, includes the files below |
+| `makefiles/cmake/CMakeBuilder.cmake` | `makefiles/ambuild/AMBuilder` | the plugin target: its sources, protos and links |
+| `makefiles/cmake/shared.cmake` | `makefiles/ambuild/shared.ambuild` | settings every platform shares |
+| `makefiles/cmake/linux.cmake` | `makefiles/ambuild/linux.ambuild` | Linux compiler / linker settings |
+| `makefiles/cmake/windows.cmake` | `makefiles/ambuild/windows.ambuild` | Windows (MSVC) settings |
+| `makefiles/cmake/metamod.cmake` | `makefiles/ambuild/metamod.ambuild` | the metamod `.vdf` |
+| `makefiles/cmake/package.cmake` | `makefiles/ambuild/package.ambuild` | install layout (`addons/...`, `configs/`) |
+
+Shared by both: `makefiles/metamod/slynx_template.vdf.in` (filled in the way
+CMake's `configure_file()` does, by both builds, so their `.vdf` is
+byte-identical) and `makefiles/ExportMap` (the Linux version script, so only
+`CreateInterface` is exported).
 
 Then `src/plugin.cpp`'s `GetName()` / `GetLogTag()` / `GetDescription()`, and the
 include guard in `src/plugin.h`.
@@ -137,28 +157,30 @@ name in your `.cpp` is enough to complete it.
 
 Two of them, and they have to agree:
 
-- `CMakeLists.txt` globs `src/` and appends the SDK's `memoverride.cpp`,
-  `bitbuf.cpp`, `convar.cpp`, `keyvalues3.cpp` and the three `entity2/` files.
-- `AMBuilder` lists `src/` files **explicitly** -- a new `.cpp` under `src/` gets
-  picked up by CMake automatically and ignored by AMBuild until you add it. The
-  SDK half lives in `AMBuildScript`'s `HL2Library()`.
+- `makefiles/cmake/CMakeBuilder.cmake` lists the SDK's `memoverride.cpp`,
+  `bitbuf.cpp`, `convar.cpp`, `keyvalues3.cpp` and the three `entity2/` files,
+  then the plugin's own `src/` files -- explicitly, nothing is globbed.
+- `makefiles/ambuild/AMBuilder` lists the same `src/` files in the same order;
+  the SDK half lives in `makefiles/ambuild/shared.ambuild`.
+
+A new `.cpp` goes into both lists.
 
 A file that builds locally and fails to link in CI is almost always this.
 
 ## Protobufs
 
-`makefiles/protobuf.cmake` and `AMBuilder` each carry a list of `.proto` files to
-generate. If a message won't compile, it is almost always because its file is
-missing from **both** lists.
-
-The CMake path regenerates when a `.proto` changes only because of the `DEPENDS`
-on the custom command -- without it you silently keep building against a stale
-copy of the schema, which is a bad afternoon. AMBuild tracks this itself.
+The game protobufs are generated from s2sdk's own `.proto` files (`common/`,
+`game/shared/`, `gcsdk/`, ...), only the ones the plugin lists: AMBuild in
+`makefiles/ambuild/AMBuilder` with the protoc hl2sdk-manifests sets up, CMake with
+s2sdk's `s2sdk_protobufs()` in `makefiles/cmake/CMakeBuilder.cmake`. Keep the two lists the same; a
+message that won't compile is usually a proto (or one of its imports) missing
+from them.
 
 ## Building
 
-Requires `S2SDK` (or `HL2SDKCS2`), `MMSOURCE_DEV` and `CSGO_PROTO` in the environment, and the
-submodules checked out (`git submodule update --init --recursive`).
+Requires `S2SDK` (or `HL2SDKCS2`) and `MMSOURCE_DEV` in the environment, an s2sdk
+checkout, and this repo's submodules
+(`git submodule update --init --recursive`).
 
 CMake (local dev):
 

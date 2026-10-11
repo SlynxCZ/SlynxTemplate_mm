@@ -28,7 +28,7 @@ class SDKPackage:
     self.metamod = builder.AddFolder(self.metamod_path)
 
     self.addBinFolder(cxx)
-    self.generateVDF()
+    self.generateVDF(cxx)
 
 
   def addBinFolder(self, cxx):
@@ -54,21 +54,10 @@ class SDKPackage:
     self.bin = builder.AddFolder(self.bin_path)
 
 
-  def generateVDF(self):
+  def generateVDF(self, cxx):
 
-    vdf = '"Metamod Plugin"\n'
-    vdf += '{\n'
-    vdf += f'\t"alias"\t"{MMSPlugin.plugin_alias}"\n'
-    vdf += f'\t"file"\t"{os.path.join(os.path.relpath(self.bin_path, self.sdk_name), MMSPlugin.plugin_name)}"\n'
-    vdf += '}'
-
-    builder.AddOutputFile(
-      os.path.join(
-        self.metamod_path,
-        f'{MMSPlugin.plugin_name}.vdf'
-      ),
-      vdf.encode('utf8')
-    )
+    # From makefiles/metamod/<name>.vdf.in, the template CMake fills in too.
+    Metamod.GenerateVDF(builder, self.metamod_path, cxx)
 
 
   def addBinary(self, binary):

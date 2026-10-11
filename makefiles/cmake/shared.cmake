@@ -1,3 +1,6 @@
+# Settings every platform shares -- CMake twin of makefiles/ambuild/shared.ambuild.
+# The per-platform ones are in linux.cmake / windows.cmake.
+
 if (UNIX AND NOT APPLE)
     set(LINUX TRUE)
 endif ()
@@ -57,9 +60,9 @@ include_directories(
     ${SOURCESDK}/public/tier0
     ${SOURCESDK}/public/tier1
     ${SOURCESDK}/public/entity2
-    ${SOURCESDK}/public/game/server
     ${SOURCESDK}/public/schemasystem
     ${METAMOD_DIR}/core
+    ${METAMOD_DIR}/third_party/khook/include
     # NOT ${METAMOD_DIR}/core/sourcehook: this plugin brings its own private
     # SourceHook (vendor/sourcehook submodule). Its include dirs come from
     # the add_subdirectory(vendor/sourcehook) target in CMakeLists.txt
@@ -71,5 +74,3 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/vendor/dynlibutils/include
     ${CMAKE_SOURCE_DIR}/vendor/dynlibutils/include/dynlibutils
 )
-
-include(${CMAKE_CURRENT_LIST_DIR}/metamod/configure_metamod.cmake)

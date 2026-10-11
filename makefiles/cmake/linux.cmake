@@ -1,3 +1,5 @@
+# Linux settings -- CMake twin of makefiles/ambuild/linux.ambuild.
+
 add_definitions(
     -D_LINUX
     -DPOSIX
@@ -29,7 +31,13 @@ set(LINK_LIBRARIES
     ${SOURCESDK_LIB}/linux64/libtier0.so
     ${SOURCESDK_LIB}/linux64/interfaces.a
     ${SOURCESDK_LIB}/linux64/mathlib.a
-    Protobufs
+    ${SOURCESDK_LIB}/linux64/release/libprotobuf.a
     dynlibutils
     sourcehook
 )
+
+# Export only CreateInterface -- the same version script AMBuild links with
+# (makefiles/ambuild/linux.ambuild).
+set(PLUGIN_EXPORT_MAP ${CMAKE_CURRENT_LIST_DIR}/../ExportMap)
+list(APPEND PLUGIN_LINK_OPTIONS "-Wl,--version-script=${PLUGIN_EXPORT_MAP}")
+list(APPEND PLUGIN_LINK_DEPENDS ${PLUGIN_EXPORT_MAP})

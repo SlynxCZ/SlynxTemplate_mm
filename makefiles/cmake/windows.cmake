@@ -1,4 +1,6 @@
-﻿add_definitions(
+﻿# Windows (MSVC) settings -- CMake twin of makefiles/ambuild/windows.ambuild.
+
+add_definitions(
     -DCOMPILER_MSVC -DCOMPILER_MSVC64 -D_WIN32 -D_WINDOWS -D_ALLOW_KEYWORD_MACROS -D__STDC_LIMIT_MACROS
     -D_CRT_SECURE_NO_WARNINGS=1 -D_CRT_SECURE_NO_DEPRECATE=1 -D_CRT_NONSTDC_NO_DEPRECATE=1
 )
@@ -12,7 +14,7 @@ set(LINK_LIBRARIES
     ${SOURCESDK_LIB}/public/win64/tier0.lib
     ${SOURCESDK_LIB}/public/win64/interfaces.lib
     ${SOURCESDK_LIB}/public/win64/mathlib.lib
-    Protobufs
+    ${SOURCESDK_LIB}/public/win64/2015/libprotobuf.lib
     dynlibutils
     sourcehook
 )

@@ -54,6 +54,14 @@ SdkHelpers = builder.Eval(os.path.join(hl2sdk_manifests, 'SdkHelpers.ambuild'), 
 type(SdkHelpers).configureCxx.__globals__['SdkTarget'].findLibrary = \
   staticmethod(lambda context, sdk, cxx, name: None)
 
+# The build settings, split the same way as the CMake side (makefiles/cmake/):
+# shared.ambuild <-> shared.cmake, linux.ambuild <-> linux.cmake,
+# windows.ambuild <-> windows.cmake, metamod.ambuild <-> metamod.cmake.
+Shared = builder.Import('makefiles/ambuild/shared.ambuild')
+Linux = builder.Import('makefiles/ambuild/linux.ambuild')
+Windows = builder.Import('makefiles/ambuild/windows.ambuild')
+Metamod = builder.Import('makefiles/ambuild/metamod.ambuild')
+
 class MMSPluginConfig(object):
   def __init__(self):
     self.sdk_manifests = []
@@ -127,137 +135,17 @@ class MMSPluginConfig(object):
       self.configure_cxx(cxx)
 
   def configure_cxx(self, cxx):
-    if cxx.behavior == 'gcc':
-      cxx.defines += [
-        'stricmp=strcasecmp',
-        '_stricmp=strcasecmp',
-        '_snprintf=snprintf',
-        '_vsnprintf=vsnprintf',
-        'HAVE_STDINT_H',
-        'GNUC',
-      ]
-      cxx.cflags += [
-        '-pipe',
-        '-fno-strict-aliasing',
-        '-Wall',
-        '-Werror',
-        '-Wno-uninitialized',
-        '-Wno-unused',
-        '-Wno-switch',
-        '-Wno-parentheses',
-        '-Wno-mismatched-tags',
-        '-Wno-deprecated-anon-enum-enum-conversion',
-        '-Wno-ordered-compare-function-pointers',
-        '-Wno-pragma-once-outside-header',
-        '-Wno-ambiguous-reversed-operator',
-        '-Wno-invalid-offsetof',
-        '-msse',
-        '-fPIC'
-      ]
+    # makefiles/ambuild/shared.ambuild, then linux.ambuild or windows.ambuild --
+    # the AMBuild twins of makefiles/cmake/shared.cmake, linux.cmake, windows.cmake.
+    Shared.ConfigureCxx(cxx, builder.options)
+    self.Platform(cxx).ConfigureCxx(cxx, builder.options)
 
-      cxx.cxxflags += ['-std=c++20']
-      if (cxx.version >= 'gcc-4.0') or cxx.family == 'clang':
-        cxx.cflags += ['-fvisibility=hidden']
-        cxx.cxxflags += ['-fvisibility-inlines-hidden']
-      cxx.cxxflags += [
-        '-frtti',
-        '-fno-threadsafe-statics',
-        '-Wno-non-virtual-dtor',
-        '-Wno-overloaded-virtual',
-        '-Wno-register',
-      ]
-      if (cxx.version >= 'gcc-4.7' or cxx.family == 'clang'):
-        cxx.cxxflags += ['-Wno-delete-non-virtual-dtor']
-      if cxx.family == 'gcc':
-        cxx.cflags += ['-mfpmath=sse']
-      if cxx.family == 'clang':
-        cxx.cxxflags += ['-Wno-implicit-exception-spec-mismatch']
-        if cxx.version >= 'clang-3.9':
-          cxx.cxxflags += ['-Wno-expansion-to-defined']
-        if cxx.version >= 'clang-3.6':
-          cxx.cxxflags += ['-Wno-inconsistent-missing-override']
-        if cxx.version >= 'clang-3.4':
-          cxx.cxxflags += ['-Wno-deprecated-register']
-        else:
-          cxx.cxxflags += ['-Wno-deprecated']
-      
-      # Work around SDK warnings.
-      if cxx.version >= 'clang-10.0':
-        cxx.cflags += [
-          '-Wno-implicit-int-float-conversion',
-          '-Wno-tautological-overlap-compare',
-        ]
-
-    elif cxx.like('msvc'):
-      if builder.options.debug == '1':
-        cxx.cflags += ['/MTd']
-        cxx.linkflags += ['/NODEFAULTLIB:libcmt']
-      else:
-        cxx.cflags += ['/MT']
-      cxx.defines += [
-        '_CRT_SECURE_NO_DEPRECATE',
-        '_CRT_SECURE_NO_WARNINGS',
-        '_CRT_NONSTDC_NO_DEPRECATE',
-      ]
-      cxx.cflags += [
-        '/W3',
-        '/Zi',
-        '/EHsc',
-        '/std:c++20',
-        '/bigobj',
-      ]
-      cxx.cxxflags += ['/TP']
-      
-      cxx.linkflags += [
-        '/SUBSYSTEM:WINDOWS',
-        'kernel32.lib',
-        'user32.lib',
-        'gdi32.lib',
-        'winspool.lib',
-        'comdlg32.lib',
-        'advapi32.lib',
-        'shell32.lib',
-        'ole32.lib',
-        'oleaut32.lib',
-        'uuid.lib',
-        'odbc32.lib',
-        'odbccp32.lib',
-      ]
-
-    # Optimization
-    if builder.options.opt == '1':
-      cxx.defines += ['NDEBUG']
-      if cxx.behavior == 'gcc':
-        cxx.cflags += ['-O3']
-      elif cxx.behavior == 'msvc':
-        cxx.cflags += ['/Ox', '/Zo']
-        cxx.linkflags += ['/OPT:ICF', '/OPT:REF']
-
-    # Debugging
-    if builder.options.debug == '1':
-      cxx.defines += ['DEBUG', '_DEBUG']
-      if cxx.behavior == 'gcc':
-        cxx.cflags += ['-g3']
-      elif cxx.behavior == 'msvc':
-        cxx.cflags += ['/Od', '/RTC1']
-
-    # Don't omit the frame pointer.
-    # This needs to be after our optimization flags which could otherwise disable it.
-    if cxx.behavior == 'gcc':
-      cxx.cflags += ['-fno-omit-frame-pointer']
-    elif cxx.behavior == 'msvc':
-      cxx.cflags += ['/Oy-']
-
-    # Platform-specifics
+  def Platform(self, cxx):
     if cxx.target.platform == 'linux':
-      cxx.defines += ['_LINUX', 'LINUX', 'POSIX', '_FILE_OFFSET_BITS=64']
-      if cxx.family == 'gcc':
-        cxx.linkflags += ['-static-libgcc']
-      elif cxx.family == 'clang':
-        cxx.linkflags += ['-lgcc_eh']
-      cxx.linkflags += ['-static-libstdc++']
-    elif cxx.target.platform == 'windows':
-      cxx.defines += ['WIN32', '_WINDOWS']
+      return Linux
+    if cxx.target.platform == 'windows':
+      return Windows
+    raise Exception('Unsupported target platform: {0}'.format(cxx.target.platform))
 
   def Library(self, cxx, name):
     binary = cxx.Library(name)
@@ -265,41 +153,9 @@ class MMSPluginConfig(object):
   
   def HL2Library(self, context, compiler, name, sdk):
     binary = self.Library(compiler, name)
-    mms_core_path = os.path.join(self.mms_root, 'core')
-    cxx = binary.compiler
-
-    cxx.cxxincludes += [
-      os.path.join(context.currentSourcePath),
-      os.path.join(mms_core_path),
-      # NOT os.path.join(mms_core_path, 'sourcehook'): this plugin brings its
-      # own private SourceHook (vendor/sourcehook submodule). See the caveat
-      # in src/plugin.h and README.md -- the ICvar vtable slot hooked here is
-      # hooked by other plugins through metamod's shared engine too.
-      # AddPublicIncludes() below covers every header a consumer needs,
-      # including the shim that keeps metamod's own ISmmPlugin.h
-      # `#include "sourcehook.h"` resolving -- to our copy.
-    ]
-
-    self.sourcehook_lib['config'].AddPublicIncludes(binary)
-
-    defines = []
-    for other_sdk in self.sdk_manifests:
-      cxx.defines += ['SE_{}={}'.format(other_sdk['define'], other_sdk['code'])]
-
-    if sdk['source2']:
-      cxx.defines += ['META_IS_SOURCE2']
-      binary.sources += [
-        os.path.join(sdk['path'], 'public', 'tier0', 'memoverride.cpp'),
-        os.path.join(sdk['path'], 'tier1', 'bitbuf.cpp'),
-        os.path.join(sdk['path'], 'tier1', 'convar.cpp'),
-        os.path.join(sdk['path'], 'tier1', 'keyvalues3.cpp'),
-        os.path.join(sdk['path'], 'entity2', 'entityidentity.cpp'),
-        os.path.join(sdk['path'], 'entity2', 'entitykeyvalues.cpp'),
-        os.path.join(sdk['path'], 'entity2', 'entitysystem.cpp')
-      ]
-
+    Shared.ConfigureBinary(context, binary, sdk, self)
     SdkHelpers.configureCxx(context, binary, sdk)
-
+    self.Platform(binary.compiler).ConfigureBinary(context, binary, sdk, self)
     return binary
 
 MMSPlugin = MMSPluginConfig()
@@ -310,8 +166,8 @@ MMSPlugin.sourcehook_lib = builder.Build('vendor/sourcehook/AMBuildScript', {})
 MMSPlugin.dynlibutils_lib = builder.Build('vendor/dynlibutils/AMBuildScript', {})
 
 BuildScripts = [
-  'AMBuilder',
-  'PackageScript'
+  'makefiles/ambuild/AMBuilder',
+  'makefiles/ambuild/package.ambuild'
 ]
 
-builder.Build(BuildScripts, { 'MMSPlugin': MMSPlugin })
+builder.Build(BuildScripts, { 'MMSPlugin': MMSPlugin, 'Metamod': Metamod })

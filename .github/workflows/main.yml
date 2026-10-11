@@ -51,22 +51,18 @@ jobs:
           $SDK = "C:\sdk"
           $S2SDK = "$SDK\s2sdk"
           $MMS = "$SDK\metamod-source"
-          $PROTO = "$SDK\Protobufs"
 
           if (Test-Path $SDK) { Remove-Item $SDK -Recurse -Force }
           New-Item -ItemType Directory -Path $SDK | Out-Null
 
           git clone --recursive --branch cs2 --single-branch https://github.com/alliedmodders/s2sdk $S2SDK
           git clone --recursive --branch master --single-branch https://github.com/alliedmodders/metamod-source $MMS
-          git clone --recursive https://github.com/SteamTracking/Protobufs $PROTO
 
           $S2SDK_UNIX = $S2SDK.Replace("\", "/")
           $MMS_UNIX    = $MMS.Replace("\", "/")
-          $PROTO_UNIX  = "$($PROTO.Replace('\','/'))/csgo"
 
           echo "S2SDK=$S2SDK_UNIX"      >> $env:GITHUB_ENV
           echo "MMSOURCE_DEV=$MMS_UNIX"  >> $env:GITHUB_ENV
-          echo "CSGO_PROTO=$PROTO_UNIX"  >> $env:GITHUB_ENV
 
       - name: Checkout AMBuild
         uses: actions/checkout@v4
