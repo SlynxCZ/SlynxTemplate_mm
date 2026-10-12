@@ -35,7 +35,6 @@ def ConfigureBinary(context, binary, sdk, MMSPlugin):
     cxx.defines += ['SE_{}={}'.format(other_sdk['define'], other_sdk['code'])]
 
   if sdk['source2']:
-    cxx.defines += ['META_IS_SOURCE2']
     # The same list, in the same order, as CMakeLists.txt's.
     binary.sources += [
       os.path.join(sdk['path'], 'public', 'tier0', 'memoverride.cpp'),
