@@ -50,18 +50,22 @@ jobs:
 
           $SDK = "C:\sdk"
           $S2SDK = "$SDK\s2sdk"
+          $S2SDK_MANIFESTS = "$SDK\s2sdk-manifests"
           $MMS = "$SDK\metamod-source"
 
           if (Test-Path $SDK) { Remove-Item $SDK -Recurse -Force }
           New-Item -ItemType Directory -Path $SDK | Out-Null
 
           git clone --recursive --branch cs2 --single-branch https://github.com/FUNPLAY-pro-CS2/s2sdk $S2SDK
+          git clone --branch master --single-branch https://github.com/FUNPLAY-pro-CS2/s2sdk-manifests $S2SDK_MANIFESTS
           git clone --recursive --branch master --single-branch https://github.com/alliedmodders/metamod-source $MMS
 
           $S2SDK_UNIX = $S2SDK.Replace("\", "/")
+          $S2SDK_MANIFESTS_UNIX = $S2SDK_MANIFESTS.Replace("\", "/")
           $MMS_UNIX    = $MMS.Replace("\", "/")
 
           echo "S2SDK=$S2SDK_UNIX"      >> $env:GITHUB_ENV
+          echo "S2SDK_MANIFESTS_DIR=$S2SDK_MANIFESTS_UNIX" >> $env:GITHUB_ENV
           echo "MMSOURCE_DEV=$MMS_UNIX"  >> $env:GITHUB_ENV
 
       - name: Checkout AMBuild
@@ -90,7 +94,7 @@ jobs:
             --enable-optimize ^
             --sdks cs2 ^
             --mms_path=%MMSOURCE_DEV% ^
-            --hl2sdk-manifests=%MMSOURCE_DEV%/hl2sdk-manifests
+            --s2sdk-manifests=%S2SDK_MANIFESTS_DIR%
 
           ambuild
 

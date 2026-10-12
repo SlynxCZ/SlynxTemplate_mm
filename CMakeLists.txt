@@ -22,8 +22,24 @@ else()
 endif()
 
 include(makefiles/cmake/shared.cmake)
-# s2sdk, for s2sdk_protobufs(): the game protobufs from its protos
-add_subdirectory(${SOURCESDK_DIR} ${CMAKE_BINARY_DIR}/s2sdk)
+# s2sdk-manifests: s2sdk::s2sdk (s2sdk's include paths, defines and libraries)
+# and s2sdk_protobufs(). S2SDK_MANIFESTS_DIR as a cache or environment variable,
+# else fetched.
+if (NOT S2SDK_MANIFESTS_DIR AND DEFINED ENV{S2SDK_MANIFESTS_DIR})
+    file(TO_CMAKE_PATH "$ENV{S2SDK_MANIFESTS_DIR}" S2SDK_MANIFESTS_DIR)
+endif ()
+if (NOT S2SDK_MANIFESTS_DIR OR NOT EXISTS "${S2SDK_MANIFESTS_DIR}/s2sdk-manifests.cmake")
+    include(FetchContent)
+    FetchContent_Declare(s2sdk_manifests
+            GIT_REPOSITORY https://github.com/FUNPLAY-pro-CS2/s2sdk-manifests.git
+            GIT_TAG master
+            GIT_SHALLOW TRUE
+    )
+    FetchContent_MakeAvailable(s2sdk_manifests)
+    set(S2SDK_MANIFESTS_DIR "${s2sdk_manifests_SOURCE_DIR}")
+endif ()
+include("${S2SDK_MANIFESTS_DIR}/s2sdk-manifests.cmake")
+s2sdk_manifest(cs2 "${SOURCESDK_DIR}")
 
 # This plugin's own private SourceHook, not metamod's shared one -- see
 # makefiles/cmake/shared.cmake, src/plugin.h and README.md. Its own test suite

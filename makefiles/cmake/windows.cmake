@@ -1,7 +1,9 @@
 ﻿# Windows (MSVC) settings -- CMake twin of makefiles/ambuild/windows.ambuild.
 
+# COMPILER_MSVC*, WIN32, WIN64, _ITERATOR_DEBUG_LEVEL=0 and the SDK's libraries
+# come from s2sdk-manifests' windows.cmake, through s2sdk::s2sdk.
 add_definitions(
-    -DCOMPILER_MSVC -DCOMPILER_MSVC64 -D_WIN32 -D_WINDOWS -D_ALLOW_KEYWORD_MACROS -D__STDC_LIMIT_MACROS
+    -D_WIN32 -D_WINDOWS -D_ALLOW_KEYWORD_MACROS -D__STDC_LIMIT_MACROS
     -D_CRT_SECURE_NO_WARNINGS=1 -D_CRT_SECURE_NO_DEPRECATE=1 -D_CRT_NONSTDC_NO_DEPRECATE=1
 )
 
@@ -11,10 +13,7 @@ set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /OPT
 set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "${CMAKE_SHARED_LINKER_FLAGS_DEBUG} /NODEFAULTLIB:libcmt")
 
 set(LINK_LIBRARIES
-    ${SOURCESDK_LIB}/public/win64/tier0.lib
-    ${SOURCESDK_LIB}/public/win64/interfaces.lib
-    ${SOURCESDK_LIB}/public/win64/mathlib.lib
-    ${SOURCESDK_LIB}/public/win64/2015/libprotobuf.lib
+    s2sdk::s2sdk
     dynlibutils
     sourcehook
 )

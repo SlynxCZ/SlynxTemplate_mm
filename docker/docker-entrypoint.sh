@@ -12,6 +12,7 @@ export GITHUB_SHA_SHORT="$(git rev-parse --short HEAD)"
 ### --- Download s2sdk + Metamod-Source ------------------------------------
 SDK_DIR="/tmp/sdk"
 S2SDK_DIR="$SDK_DIR/s2sdk"
+S2SDK_MANIFESTS_DIR="$SDK_DIR/s2sdk-manifests"
 MMSOURCE_DIR="$SDK_DIR/metamod-source"
 
 echo "=== Preparing temporary SDK directory ==="
@@ -20,6 +21,9 @@ mkdir -p "$SDK_DIR"
 
 echo "=== Downloading s2sdk ==="
 git clone --recursive --branch cs2 --single-branch https://github.com/FUNPLAY-pro-CS2/s2sdk.git "$S2SDK_DIR"
+
+echo "=== Downloading s2sdk-manifests ==="
+git clone --branch master --single-branch https://github.com/FUNPLAY-pro-CS2/s2sdk-manifests.git "$S2SDK_MANIFESTS_DIR"
 
 echo "=== Downloading Metamod-Source ==="
 git clone --recursive --branch master --single-branch https://github.com/alliedmodders/metamod-source.git "$MMSOURCE_DIR"
@@ -43,7 +47,7 @@ python ../configure.py \
   --enable-optimize \
   --sdks cs2 \
   --mms_path=$MMSOURCE_DEV \
-  --hl2sdk-manifests=$MMSOURCE_DEV/hl2sdk-manifests
+  --s2sdk-manifests=$S2SDK_MANIFESTS_DIR
 ambuild
 
 echo "=== DONE ==="

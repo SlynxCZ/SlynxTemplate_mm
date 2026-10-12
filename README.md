@@ -171,7 +171,7 @@ A file that builds locally and fails to link in CI is almost always this.
 
 The game protobufs are generated from s2sdk's own `.proto` files (`common/`,
 `game/shared/`, `gcsdk/`, ...), only the ones the plugin lists: AMBuild in
-`makefiles/ambuild/AMBuilder` with the protoc hl2sdk-manifests sets up, CMake with
+`makefiles/ambuild/AMBuilder` with s2sdk-manifests' `SdkHelpers.addProtobufs()`, CMake with
 s2sdk's `s2sdk_protobufs()` in `makefiles/cmake/CMakeBuilder.cmake`. Keep the two lists the same; a
 message that won't compile is usually a proto (or one of its imports) missing
 from them.

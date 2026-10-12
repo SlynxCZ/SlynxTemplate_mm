@@ -23,10 +23,11 @@ endif ()
 
 set(CMAKE_STATIC_LIBRARY_PREFIX "")
 
-set(SOURCESDK ${SOURCESDK_DIR}/${BRANCH})
-set(SOURCESDK_LIB ${SOURCESDK}/lib)
+# s2sdk's include paths, defines and libraries come from s2sdk-manifests, as
+# s2sdk::s2sdk (linked in CMakeBuilder.cmake) -- SdkHelpers.configureCxx() on the
+# AMBuild side.
 
-add_definitions(-DMETA_IS_SOURCE2 -D_ITERATOR_DEBUG_LEVEL=0)
+add_definitions(-DMETA_IS_SOURCE2)
 
 if (DEFINED ENV{GITHUB_SHA_SHORT})
     add_definitions(-DGITHUB_SHA="$ENV{GITHUB_SHA_SHORT}")
@@ -40,27 +41,11 @@ else ()
     add_definitions(-DSEMVER="Local")
 endif ()
 
-if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    add_compile_definitions(_GLIBCXX_USE_CXX11_ABI=0)
-endif ()
-
 include_directories(
     ${CMAKE_SOURCE_DIR}
     ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/src/protobuf
     ${CMAKE_SOURCE_DIR}/src/sdk
-    ${SOURCESDK}
-    ${SOURCESDK}/thirdparty/protobuf-3.21.8/src
-    ${SOURCESDK}/common
-    ${SOURCESDK}/game/shared
-    ${SOURCESDK}/game/server
-    ${SOURCESDK}/public
-    ${SOURCESDK}/public/engine
-    ${SOURCESDK}/public/mathlib
-    ${SOURCESDK}/public/tier0
-    ${SOURCESDK}/public/tier1
-    ${SOURCESDK}/public/entity2
-    ${SOURCESDK}/public/schemasystem
     ${METAMOD_DIR}/core
     ${METAMOD_DIR}/third_party/khook/include
     # NOT ${METAMOD_DIR}/core/sourcehook: this plugin brings its own private

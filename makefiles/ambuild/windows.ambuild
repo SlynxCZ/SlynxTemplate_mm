@@ -52,8 +52,10 @@ def ConfigureCxx(cxx, options):
   # This needs to be after our optimization flags which could otherwise disable it.
   cxx.cflags += ['/Oy-']
 
-  cxx.defines += ['WIN32', '_WINDOWS']
+  # WIN32, WIN64, COMPILER_MSVC* come from s2sdk-manifests' windows.ambuild.
+  cxx.defines += ['_WINDOWS']
 
-# The plugin binary, after SdkHelpers added the SDK's libraries.
+# The plugin binary, after SdkHelpers added the SDK's libraries (the Steam API
+# among them): nothing Windows-only.
 def ConfigureBinary(context, binary, sdk, MMSPlugin):
   pass

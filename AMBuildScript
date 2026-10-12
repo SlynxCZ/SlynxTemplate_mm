@@ -38,21 +38,18 @@ def ResolveMMSRoot():
 
 mms_root = ResolveMMSRoot()
 
-if not builder.options.hl2sdk_manifests:
-  raise Exception('Could not find a source copy of HL2SDK manifests')
-hl2sdk_manifests = builder.options.hl2sdk_manifests
+# s2sdk-manifests: what a binary needs from s2sdk (include paths, defines,
+# libraries incl. the Steam API, protoc) -- the same lists the CMake side gets
+# through s2sdk's CMakeLists.txt as s2sdk::s2sdk.
+def ResolveS2SdkManifests():
+  path = builder.options.s2sdk_manifests
+  if not path:
+    path = ResolveEnvPath('S2SDK_MANIFESTS_DIR', 's2sdk-manifests')
+  if not path or not os.path.isfile(os.path.join(path, 'SdkHelpers.ambuild')):
+    raise Exception('Could not find s2sdk-manifests: pass --s2sdk-manifests or set S2SDK_MANIFESTS_DIR')
+  return os.path.abspath(os.path.normpath(path))
 
-SdkHelpers = builder.Eval(os.path.join(hl2sdk_manifests, 'SdkHelpers.ambuild'), {
-  'Project': 'metamod'
-})
-
-# s2sdk carries mathlib/AMBuilder, and hl2sdk-manifests builds any SDK library
-# it finds an AMBuilder for -- with this project's compiler and flags, which
-# that code does not compile under -- and links it ahead of the prebuilt
-# lib/*/mathlib the manifest lists anyway. Keep to the prebuilt one, as with
-# hl2sdk.
-type(SdkHelpers).configureCxx.__globals__['SdkTarget'].findLibrary = \
-  staticmethod(lambda context, sdk, cxx, name: None)
+SdkHelpers = builder.Eval(os.path.join(ResolveS2SdkManifests(), 'SdkHelpers.ambuild'))
 
 # The build settings, split the same way as the CMake side (makefiles/cmake/):
 # shared.ambuild <-> shared.cmake, linux.ambuild <-> linux.cmake,
@@ -108,11 +105,11 @@ class MMSPluginConfig(object):
       sdk_path = os.path.join(builder.options.hl2sdk_root, dir_name)
       if os.path.exists(sdk_path):
         return sdk_path
-    if sdk_name == 'cs2':
-      # s2sdk (formerly hl2sdk's cs2 branch): the first of these that is set wins.
-      for env in ['S2SDK_CS2', 'S2SDKCS2', 'S2SDK', 'HL2SDK_CS2', 'HL2SDKCS2']:
-        if os.path.isdir(os.environ.get(env, '')):
-          return os.environ[env]
+    # The manifest's environment variables (cs2: S2SDK_CS2, S2SDKCS2, S2SDK,
+    # HL2SDK_CS2, HL2SDKCS2): the first of them that is set wins.
+    sdk_path = SdkHelpers.findSdkPathFromEnv(sdk_name)
+    if sdk_path and os.path.isdir(sdk_path):
+      return sdk_path
     return ResolveEnvPath('HL2SDK{}'.format(sdk_name.upper()), dir_name)
 
   def detectSDKs(self):
@@ -170,4 +167,4 @@ BuildScripts = [
   'makefiles/ambuild/package.ambuild'
 ]
 
-builder.Build(BuildScripts, { 'MMSPlugin': MMSPlugin, 'Metamod': Metamod })
+builder.Build(BuildScripts, { 'MMSPlugin': MMSPlugin, 'Metamod': Metamod, 'SdkHelpers': SdkHelpers })
