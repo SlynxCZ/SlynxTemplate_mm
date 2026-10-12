@@ -19,7 +19,7 @@ rm -rf "$SDK_DIR"
 mkdir -p "$SDK_DIR"
 
 echo "=== Downloading s2sdk ==="
-git clone --recursive --branch cs2 --single-branch https://github.com/alliedmodders/s2sdk.git "$S2SDK_DIR"
+git clone --recursive --branch cs2 --single-branch https://github.com/FUNPLAY-pro-CS2/s2sdk.git "$S2SDK_DIR"
 
 echo "=== Downloading Metamod-Source ==="
 git clone --recursive --branch master --single-branch https://github.com/alliedmodders/metamod-source.git "$MMSOURCE_DIR"
