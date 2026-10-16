@@ -56,8 +56,8 @@ jobs:
           if (Test-Path $SDK) { Remove-Item $SDK -Recurse -Force }
           New-Item -ItemType Directory -Path $SDK | Out-Null
 
-          git clone --recursive --branch cs2 --single-branch https://github.com/FUNPLAY-pro-CS2/s2sdk $S2SDK
-          git clone --branch master --single-branch https://github.com/FUNPLAY-pro-CS2/s2sdk-manifests $S2SDK_MANIFESTS
+          git clone --recursive --branch cs2 --single-branch https://github.com/Source2Mod/s2sdk $S2SDK
+          git clone --branch master --single-branch https://github.com/Source2Mod/s2sdk-manifests $S2SDK_MANIFESTS
           git clone --recursive --branch master --single-branch https://github.com/alliedmodders/metamod-source $MMS
 
           $S2SDK_UNIX = $S2SDK.Replace("\", "/")
