@@ -26,7 +26,7 @@ echo "=== Downloading s2sdk-manifests ==="
 git clone --branch master --single-branch https://github.com/Source2Mod/s2sdk-manifests.git "$S2SDK_MANIFESTS_DIR"
 
 echo "=== Downloading Metamod-Source ==="
-git clone --recursive --branch master --single-branch https://github.com/alliedmodders/metamod-source.git "$MMSOURCE_DIR"
+git clone --recursive --branch master --single-branch https://github.com/Source2Mod/metamod-source.git "$MMSOURCE_DIR"
 
 ### --- Export env vars for CMake ------------------------------------------
 export S2SDK="$S2SDK_DIR"
