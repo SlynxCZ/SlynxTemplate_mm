@@ -173,12 +173,15 @@ static bool IsInModuleText(const void* p, const void* pModuleAddress)
 // The NetworkVar wrapper's NetworkStateChanged starts by checking
 // NetworkStateChangedData::m_nPathIndex against -1: `cmp dword ptr [reg+0x38], -1`,
 // 83 /7 with a disp8 of 0x38 and an imm8 of -1, whatever register holds the data,
-// within its first 32 bytes. No other slot of these vtables does that (checked on all
+// within its first 16 bytes. No other slot of these vtables does that (checked on all
 // NetworkVar_ vtables, 2026-09-23 binaries); s2binlib's find_networkvar_vtable_statechanged
 // tests the same.
 static bool ChecksPathIndex(const std::uint8_t* pCode)
 {
-    for (std::size_t i = 0; i + 4 <= 32; ++i)
+    // 16 bytes: the hit is at byte 0 or 12 (2026-10-23 binaries); a wider window
+    // ran past a tiny function's ret / jmp into the next one (CHitboxComponent,
+    // the CPlayer_*Services thunk) and matched there.
+    for (std::size_t i = 0; i + 4 <= 16; ++i)
     {
         const std::uint8_t modrm = pCode[i + 1];
         // mod 01 (disp8), reg 111 (/7 = cmp), rm not 100 (that one takes a SIB byte)
